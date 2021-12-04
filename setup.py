@@ -6,7 +6,7 @@ import setuptools
 
 setuptools.setup(
     # defined as the cli package (Note the naming)
-    name="mscgnet",
+    name="mscgNetV2",
     version="0.1.0",
     author="",
     author_email="",
