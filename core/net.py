@@ -13,6 +13,7 @@ class MSCGNet:
     def load_model(model_name: str):
         pass
 
+    @staticmethod
     def get_model(model_name: str):
         pass
 
@@ -136,14 +137,16 @@ class RX50GCN3Head4Channel(nn.Module):
                 break
             break
 
-        self.conv0.parameters = torch.cat([par[:, 0, :, :].unsqueeze(1), par], 1)
+        self.conv0.parameters = torch.cat(
+            [par[:, 0, :, :].unsqueeze(1), par], 1)
         self.layer0 = torch.nn.Sequential(self.conv0, *list(self.layer0)[1:4])
 
         self.graph_layers1 = GCNLayer(
             1024, 128, bnorm=True, activation=nn.ReLU(True), dropout=dropout
         )
 
-        self.graph_layers2 = GCNLayer(128, out_channels, bnorm=False, activation=None)
+        self.graph_layers2 = GCNLayer(
+            128, out_channels, bnorm=False, activation=None)
 
         self.scg = SCGBlock(
             in_ch=1024,
@@ -157,7 +160,8 @@ class RX50GCN3Head4Channel(nn.Module):
 
     def forward(self, x):
         x_size = x.size()
-        if DEBUG: print("\nRX50GCN3Head4Channel Input Size:", x_size)
+        if DEBUG:
+            print("\nRX50GCN3Head4Channel Input Size:", x_size)
         # print(list(self.layer0.children()))
 
         # 3-hops denoting power in which 8 pixels are adjacent to a center
@@ -167,8 +171,13 @@ class RX50GCN3Head4Channel(nn.Module):
         gx2 = self.layer1(gx1)
         gx3 = self.layer2(gx2)
         gx = self.layer3(gx3)
-        if DEBUG: print(gx1.shape); print(gx2.shape); print(gx3.shape); print(gx.shape); print(
-            "Completed first 3 Bottleneck Layers of ResNet")
+        if DEBUG:
+            print(gx1.shape)
+            print(gx2.shape)
+            print(gx3.shape)
+            print(gx.shape)
+            print(
+                "Completed first 3 Bottleneck Layers of ResNet")
 
         gx90 = gx.permute(0, 1, 3, 2)
         gx180 = gx.flip(3)
@@ -180,7 +189,8 @@ class RX50GCN3Head4Channel(nn.Module):
         )  # + gx.reshape(B, -1, C)
         if self.aux_pred:
             gx += z_hat
-        gx = gx.reshape(B, self.num_cluster, self.node_size[0], self.node_size[1])
+        gx = gx.reshape(B, self.num_cluster,
+                        self.node_size[0], self.node_size[1])
 
         A, gx90, loss2, z_hat = self.scg(gx90)
         gx90, _ = self.graph_layers2(
@@ -188,7 +198,8 @@ class RX50GCN3Head4Channel(nn.Module):
         )  # + gx.reshape(B, -1, C)
         if self.aux_pred:
             gx90 += z_hat
-        gx90 = gx90.reshape(B, self.num_cluster, self.node_size[1], self.node_size[0])
+        gx90 = gx90.reshape(B, self.num_cluster,
+                            self.node_size[1], self.node_size[0])
         gx90 = gx90.permute(0, 1, 3, 2)
         gx += gx90
 
@@ -198,7 +209,8 @@ class RX50GCN3Head4Channel(nn.Module):
         )  # + gx.reshape(B, -1, C)
         if self.aux_pred:
             gx180 += z_hat
-        gx180 = gx180.reshape(B, self.num_cluster, self.node_size[0], self.node_size[1])
+        gx180 = gx180.reshape(B, self.num_cluster,
+                              self.node_size[0], self.node_size[1])
         gx180 = gx180.flip(3)
         gx += gx180
 
@@ -206,7 +218,8 @@ class RX50GCN3Head4Channel(nn.Module):
 
         if self.training:
             return (
-                F.interpolate(gx, x_size[2:], mode="bilinear", align_corners=False),
+                F.interpolate(gx, x_size[2:],
+                              mode="bilinear", align_corners=False),
                 loss + loss2 + loss3,
             )
         else:
@@ -256,14 +269,16 @@ class RX101GCN3Head4Channel(nn.Module):
                 break
             break
 
-        self.conv0.parameters = torch.cat([par[:, 0, :, :].unsqueeze(1), par], 1)
+        self.conv0.parameters = torch.cat(
+            [par[:, 0, :, :].unsqueeze(1), par], 1)
         self.layer0 = torch.nn.Sequential(self.conv0, *list(self.layer0)[1:4])
 
         self.graph_layers1 = GCNLayer(
             1024, 128, bnorm=True, activation=nn.ReLU(True), dropout=dropout
         )
 
-        self.graph_layers2 = GCNLayer(128, out_channels, bnorm=False, activation=None)
+        self.graph_layers2 = GCNLayer(
+            128, out_channels, bnorm=False, activation=None)
 
         self.scg = SCGBlock(
             in_ch=1024,
@@ -310,7 +325,8 @@ class RX101GCN3Head4Channel(nn.Module):
         )  # + gx.reshape(B, -1, C)
         if self.aux_pred:
             gx90 += z_hat
-        gx90 = gx90.view(B, self.num_cluster, self.node_size[1], self.node_size[0])
+        gx90 = gx90.view(B, self.num_cluster,
+                         self.node_size[1], self.node_size[0])
         gx90 = gx90.permute(0, 1, 3, 2)
         gx += gx90
 
@@ -320,7 +336,8 @@ class RX101GCN3Head4Channel(nn.Module):
         )  # + gx.reshape(B, -1, C)
         if self.aux_pred:
             gx180 += z_hat
-        gx180 = gx180.view(B, self.num_cluster, self.node_size[0], self.node_size[1])
+        gx180 = gx180.view(B, self.num_cluster,
+                           self.node_size[0], self.node_size[1])
         gx180 = gx180.flip(3)
         gx += gx180
 
@@ -328,7 +345,8 @@ class RX101GCN3Head4Channel(nn.Module):
 
         if self.training:
             return (
-                F.interpolate(gx, x_size[2:], mode="bilinear", align_corners=False),
+                F.interpolate(gx, x_size[2:],
+                              mode="bilinear", align_corners=False),
                 loss + loss2 + loss3,
             )
         else:
@@ -339,7 +357,79 @@ class SCGBlock(nn.Module):
     def __init__(
             self, in_ch, hidden_ch=6, node_size=(32, 32), add_diag=True, dropout=0.2
     ):
-        """
+        """Self-Constructing Graph module facilitating construction of undirected graphs 
+
+
+        Module for creating undirected graphs and capturing relations across images
+        from feature maps (weight adjacency matrices) by learning the **mean matrix** and a **standard deviation
+        matrix** of a Gaussian using 2 single-layer **CNNs**. Parameter free adaptive average pooling 
+        is used to reduce the spatial dimensions of the input. Usage of diagonal regularization is applied
+        to stabilize training and to preserve local information. The output of the of module is a symmetric adjacency matrix
+        and an adaptive residual prediction (used to refine the final prediction after information propogation along the graph)
+
+        Feature Map
+
+        .. math:: 
+
+            X \in \mathbb{R}^{h\\times w \\times d}
+
+        Graph of Converted Feature Map
+
+        .. math:: 
+
+            G = (\hat{A},X')\mid X'\in \mathbb{R}^{n\\times d}, n=h'\\times w' \mid (h'\\times w')\lt(h\\times w)
+
+        Standard deviation of the output 
+        
+        .. math:: 
+
+            \log({\sigma}) 
+        
+        of the module follows the convention of `variational autoencoders <https://arxiv.org/abs/1312.6114i/>`_ to ensure stability during training 
+
+        **Mean Matrix**
+
+        .. math:: 
+
+            \mu \in \mathbb{R}^{n \\times c}
+
+        **Standard Deviation Matrix**
+
+        .. math::
+
+            \sigma \in \mathbb{R}^{n \\times c}
+
+        **Latent Embedding**
+
+        .. math:: 
+
+            Z \leftarrow \mu + \sigma\cdot\epsilon \mid \epsilon\in\mathbb{R^{N'\\times C}}
+
+        Auxiliary Noise initialized from a standard normal distribution
+        
+        .. math:: \epsilon\in \mathbb{R^{N'\\times C}} \mid \epsilon\sim N(0,1)
+
+        From the learned latent embeddings, we have activation .. math:: A' computed as
+
+        .. math:: A' = \\text{ReLU}(ZZ^T)
+
+        such that activations 
+
+        .. math:: A'_{ij}>0 
+
+        denote the presence of an edge between the nodes 
+
+        .. math:: i,j
+
+        Usage of diagonal regularization for stabilizing training and preservie local information
+
+
+
+
+
+
+
+
 
         """
         super(SCGBlock, self).__init__()
@@ -350,7 +440,8 @@ class SCGBlock(nn.Module):
         self.pool = nn.AdaptiveAvgPool2d(node_size)
 
         self.mu = nn.Sequential(
-            nn.Conv2d(in_ch, hidden_ch, 3, padding=1, bias=True), nn.Dropout(dropout),
+            nn.Conv2d(in_ch, hidden_ch, 3, padding=1,
+                      bias=True), nn.Dropout(dropout),
         )
 
         self.logvar = nn.Sequential(
@@ -358,6 +449,8 @@ class SCGBlock(nn.Module):
         )
 
     def forward(self, x):
+        """
+        """
         B, C, H, W = x.size()
         gx = self.pool(x)
 
@@ -378,17 +471,18 @@ class SCGBlock(nn.Module):
         gama = torch.sqrt(1 + 1.0 / mean).unsqueeze(-1).unsqueeze(-1)
 
         dl_loss = (
-                gama.mean()
-                * torch.log(Ad[Ad < 1] + 1.0e-7).sum()
-                / (A.size(0) * A.size(1) * A.size(2))
+            gama.mean()
+            * torch.log(Ad[Ad < 1] + 1.0e-7).sum()
+            / (A.size(0) * A.size(1) * A.size(2))
         )
 
         kl_loss = (
-                -0.5
-                / self.nodes
-                * torch.mean(
-            torch.sum(1 + 2 * log_var - mu.pow(2) - log_var.exp().pow(2), 1)
-        )
+            -0.5
+            / self.nodes
+            * torch.mean(
+                torch.sum(1 + 2 * log_var - mu.pow(2) -
+                          log_var.exp().pow(2), 1)
+            )
         )
 
         loss = kl_loss - dl_loss
@@ -406,9 +500,9 @@ class SCGBlock(nn.Module):
         # A = laplacian_batch(A.unsqueeze(3), True).squeeze()
 
         z_hat = (
-                gama.mean()
-                * mu.reshape(B, self.nodes, self.hidden)
-                * (1.0 - log_var.reshape(B, self.nodes, self.hidden))
+            gama.mean()
+            * mu.reshape(B, self.nodes, self.hidden)
+            * (1.0 - log_var.reshape(B, self.nodes, self.hidden))
         )
 
         return A, gx, loss, z_hat
@@ -429,10 +523,6 @@ class SCGBlock(nn.Module):
 
 
 class GCNLayer(nn.Module):
-    """
-
-    """
-
     def __init__(
             self, in_features, out_features, bnorm=True, activation=nn.ReLU(), dropout=None
     ):
